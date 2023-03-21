@@ -75,6 +75,7 @@ if [ -n "$isLikelyRedmine" ]; then
 			file_env 'REDMINE_DB_PASSWORD' "${MYSQL_ENV_MYSQL_PASSWORD:-${MYSQL_ENV_MYSQL_ROOT_PASSWORD:-}}"
 			file_env 'REDMINE_DB_DATABASE' "${MYSQL_ENV_MYSQL_DATABASE:-${MYSQL_ENV_MYSQL_USER:-redmine}}"
 			file_env 'REDMINE_DB_ENCODING' ''
+			REDMINE_DB_HOST="$host"
 		elif [ "$REDMINE_DB_POSTGRES" ]; then
 			adapter='postgresql'
 			host="$REDMINE_DB_POSTGRES"
@@ -83,14 +84,18 @@ if [ -n "$isLikelyRedmine" ]; then
 			file_env 'REDMINE_DB_PASSWORD' "${POSTGRES_ENV_POSTGRES_PASSWORD}"
 			file_env 'REDMINE_DB_DATABASE' "${POSTGRES_ENV_POSTGRES_DB:-${REDMINE_DB_USERNAME:-}}"
 			file_env 'REDMINE_DB_ENCODING' 'utf8'
+			REDMINE_DB_HOST="$host"
 		elif [ "$REDMINE_DB_SQLSERVER" ]; then
 			adapter='sqlserver'
-			host="$REDMINE_DB_SQLSERVER"
+			datacenter="$REDMINE_DB_SQLSERVER"
 			file_env 'REDMINE_DB_PORT' '1433'
 			file_env 'REDMINE_DB_USERNAME' ''
 			file_env 'REDMINE_DB_PASSWORD' ''
 			file_env 'REDMINE_DB_DATABASE' ''
 			file_env 'REDMINE_DB_ENCODING' ''
+			file_env 'REDMINE_DB_HOST' ''
+			REDMINE_DB_DATACENTER="$host"
+			host=''
 		else
 			echo >&2
 			echo >&2 'warning: missing REDMINE_DB_MYSQL, REDMINE_DB_POSTGRES, or REDMINE_DB_SQLSERVER environment variables'
@@ -110,10 +115,10 @@ if [ -n "$isLikelyRedmine" ]; then
 			if [ "$(id -u)" = '0' ]; then
 				find "$(dirname "$REDMINE_DB_DATABASE")" \! -user redmine -exec chown redmine '{}' +
 			fi
+			REDMINE_DB_HOST="$host"
 		fi
 
 		REDMINE_DB_ADAPTER="$adapter"
-		REDMINE_DB_HOST="$host"
 		echo "$RAILS_ENV:" > config/database.yml
 		for var in \
 			adapter \
@@ -123,6 +128,7 @@ if [ -n "$isLikelyRedmine" ]; then
 			password \
 			database \
 			encoding \
+			datacenter \
 		; do
 			env="REDMINE_DB_${var^^}"
 			val="${!env}"
